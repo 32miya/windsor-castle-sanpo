@@ -500,6 +500,7 @@ const M={
   win:std({map:TX.win,roughness:.7}), winM:std({map:TX.winM,roughness:.8}),
   winLit:new THREE.MeshBasicMaterial({map:TX.winLit,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,opacity:0,polygonOffset:true,polygonOffsetFactor:-2}),
   winLitM:new THREE.MeshBasicMaterial({map:TX.winLitM,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,opacity:0,polygonOffset:true,polygonOffsetFactor:-2}),
+  facLitM:new THREE.MeshBasicMaterial({map:TX.facLit,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,opacity:0,polygonOffset:true,polygonOffsetFactor:-1}),
   facLit:new THREE.MeshBasicMaterial({map:TX.facLit,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,opacity:0,polygonOffset:true,polygonOffsetFactor:-1}),
   fan:std({map:TX.fan,roughness:.85,side:THREE.DoubleSide,emissive:'#fff6e0',emissiveMap:TX.fan,emissiveIntensity:.12}), stall:std({map:TX.stall,roughness:.6}),
   banners:std({map:TX.banners,roughness:.9,side:THREE.DoubleSide}), shields:std({map:TX.shields,roughness:.7,side:THREE.DoubleSide}), portraits:std({map:TX.portraits,roughness:.5}),
@@ -546,9 +547,9 @@ class Batch{ constructor(mat,tile,own,group){ this.mat=mat; this.tile=tile||2.5;
     const m=new THREE.Mesh(G,this.mat); m.castShadow=this.cast; m.receiveShadow=true; m.matrixAutoUpdate=false; eg(this.group).add(m); this.g=[]; return m; } }
 const BK={};
 const TILE={ash:4,ashL:4,ashD:4,chalk:4,brick:3,timber:6,slate:4,tile:4,lead:4,thatch:4,gravel:5,cobble:3,asph:8,flag:4,mud:5,grass:6,lawn:8,leaf:3,hedge:2,floorSt:4,marble:3,parquet:3,carpet:4,oak:3,plaster:4,damR:2.5,damG:2.5,damB:2.5,damC:2.5,fan:5};
-const OWNUV={win:1,winM:1,winLit:1,winLitM:1,facLit:1,fan:1,stall:1,banners:1,shields:1,portraits:1,tapestry:1,tentR:1,tentB:1,tentG:1,armsPanel:1,skyWin:1,ogC:1,ogW:1};
+const OWNUV={win:1,winM:1,winLit:1,winLitM:1,facLit:1,facLitM:1,fan:1,stall:1,banners:1,shields:1,portraits:1,tapestry:1,tentR:1,tentB:1,tentG:1,armsPanel:1,skyWin:1,ogC:1,ogW:1};
 function bk(name,group){ group=group||BG; const key=group+':'+name; if(!BK[key]){ let mat=M[name]; if(!mat&&name.startsWith('facsM')) mat=M.facsM[+name[5]]; else if(!mat&&name.startsWith('facs')) mat=M.facs[+name[4]]; if(!mat&&GLASSM[name]) mat=GLASSM[name];
-    BK[key]=new Batch(mat,TILE[name]||2.5,OWNUV[name]||GLASSM[name]||name.startsWith('facs'),group); if(GLASSM[name]||name==='facLit'||name.startsWith('winLit')||name==='skyWin') BK[key].cast=false; } return BK[key]; }
+    BK[key]=new Batch(mat,TILE[name]||2.5,OWNUV[name]||GLASSM[name]||name.startsWith('facs'),group); if(GLASSM[name]||name.startsWith('facLit')||name.startsWith('winLit')||name==='skyWin') BK[key].cast=false; } return BK[key]; }
 function TM(x,y,z,ry,sx,sy,sz,rx,rz){ const q=new THREE.Quaternion().setFromEuler(new THREE.Euler(rx||0,ry||0,rz||0,'YXZ')); return new THREE.Matrix4().compose(V3(x,y,z),q,V3(sx||1,sy||1,sz||1)); }
 const BOXG=new THREE.BoxGeometry(1,1,1);
 function boxAt(bt,x0,x1,y0,y1,z0,z1){ bk(bt).add(BOXG,TM((x0+x1)/2,(y0+y1)/2,(z0+z1)/2,0,x1-x0,y1-y0,z1-z0)); }
@@ -1050,7 +1051,7 @@ function houseRow(e,axis,front,a0,a1,dep,dir,o){ o=o||{}; let a=a0; const MED=e=
     const hh=MED?R(6,8):R(9,14), fi=MED?Math.floor(rnd()*2):Math.floor(rnd()*5);
     const cx=axis==='z'?front+dir*dep/2:mid, cz=axis==='z'?mid:front+dir*dep/2; const gy=Math.min(groundY(axis==='z'?front:cx,axis==='z'?cz:front),groundY(cx,cz));
     const W=axis==='z'?dep:w, D=axis==='z'?w:dep; const g=boxUV2(W,hh+3,D,MED?8:10); const name=MED?'facsM'+fi:'facs'+fi;
-    bk(name).add(g,TM(cx,gy-3+(hh+3)/2,cz)); if(!MED) bk('facLit').add(g,TM(cx,gy-3+(hh+3)/2,cz,0,1.003,1.001,1.003)); collide(cx-W/2,cx+W/2,cz-D/2,cz+D/2,gy-4,gy+hh);
+    bk(name).add(g,TM(cx,gy-3+(hh+3)/2,cz)); bk(MED?'facLitM':'facLit').add(g,TM(cx,gy-3+(hh+3)/2,cz,0,1.003,1.001,1.003)); collide(cx-W/2,cx+W/2,cz-D/2,cz+D/2,gy-4,gy+hh);
     const rm=MED?(rnd()<.5?'thatch':'tile'):(rnd()<.7?'slate':'tile'); gable(rm,cx-W/2-.3,cx+W/2+.3,cz-D/2-.3,cz+D/2+.3,gy+hh,MED?4:R(2.5,4),axis==='z'?'z':'x');
     if(!MED&&rnd()<.6){ const sx=cx+(axis==='z'?R(-W/3,W/3):R(-w/3,w/3)), sz=cz+(axis==='z'?R(-w/3,w/3):R(-D/3,D/3)); boxAt('brick',sx-.6,sx+.6,gy+hh,gy+hh+R(3,4.5),sz-.5,sz+.5); }
     TOWNMAP.push({e,x0:cx-W/2,x1:cx+W/2,z0:cz-D/2,z1:cz+D/2}); a+=w+(MED?R(0,3):0); } }
@@ -1231,7 +1232,7 @@ function applyTime(){ const T=TIMES[TIME]; const g=SKYC.getContext('2d'); const 
   CLOUDS.forEach(c=>{ c.material.color.set(T.night?'#2a3450':TIME==='yu'?'#ffc8a0':'#ffffff'); c.material.opacity=T.night?.35:.75; });
   // 夜のライトアップ（城は投光、町と城の窓に灯り、礼拝堂のステンドグラスが外へにじむ）
   STONEMATS.forEach(m=>m.emissiveIntensity=T.night?(ERA==='n'?.34:.04):0); M.ogC.emissiveIntensity=M.ogW.emissiveIntensity=T.night?.8:0;
-  M.winLit.opacity=T.night?.95:0; M.winLitM.opacity=T.night?.6:0; M.facLit.opacity=T.night?1:0; M.lamp.color.set(T.night?'#fff4d0':'#fff0c8'); M.torch.color.set(T.night?'#ffc060':'#ff9a40');
+  M.winLit.opacity=T.night?.95:0; M.winLitM.opacity=T.night?.6:0; M.facLit.opacity=T.night?1:0; M.facLitM.opacity=T.night?.85:0; M.lamp.color.set(T.night?'#fff4d0':'#fff0c8'); M.torch.color.set(T.night?'#ffc060':'#ff9a40');
   $('vTime').textContent=T.nm; [...$('timeSeg').children].forEach(b=>b.classList.toggle('on',b.dataset.v===TIME)); needRefl=2; }
 let needRefl=2;
 function updateRefl(){ WATER.visible=false; const pv=PIM.visible; PIM.visible=false; const pl=window.POOL; if(pl) pl.visible=false; cubeCam.update(renderer,scene); WATER.visible=true; PIM.visible=pv; if(pl) pl.visible=true; }
@@ -1412,8 +1413,11 @@ function drawMini(){ const lv=lvlOf(P.x,P.y,P.z); const key=lv+ERA; const L=LVCA
   use('shield_ceiling.webp',t=>setMap(M.shields,t));
   use('portraits.webp',t=>setMap(M.portraits,t));
   use('tapestry.webp',t=>setMap(M.tapestry,t));
-  use('town_georgian.webp',t=>{ for(const i of [0,2,4]) setMap(M.facs[i],t); M.facs[2].color.set('#d8c8c0'); M.facs[4].color.set('#f0e4d4'); });
-  use('town_timber.webp',t=>{ for(const m of M.facsM) setMap(m,t); M.facsM[1].color.set('#e8e0d2'); });
+  let litG=null, litT=null, gOK=false, tOK=false; const fit=()=>{ if(gOK&&litG){ M.facLit.map=litG; M.facLit.needsUpdate=true; } if(tOK&&litT){ M.facLitM.map=litT; M.facLitM.needsUpdate=true; } };
+  use('town_georgian.webp',t=>{ M.facs.forEach((m,i)=>{ setMap(m,t); m.color.set(['#ffffff','#e8ddd0','#d8c8c0','#f4ece4','#f0e4d4'][i]); }); gOK=true; fit(); });
+  use('town_georgian_lit.webp',t=>{ litG=t; fit(); });
+  use('town_timber.webp',t=>{ for(const m of M.facsM) setMap(m,t); M.facsM[1].color.set('#e8e0d2'); tOK=true; fit(); });
+  use('town_timber_lit.webp',t=>{ litT=t; fit(); });
 }
 
 /* ============================================================
