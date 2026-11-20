@@ -359,8 +359,8 @@ TX.cloud=(()=>{ const W=256,c=makeCanvas(W,W/2),g=c.getContext('2d'); for(let i=
 TX.beam=(()=>{ const W=64,H=256,c=makeCanvas(W,H),g=c.getContext('2d'); const gr=g.createLinearGradient(0,0,0,H); gr.addColorStop(0,'rgba(255,255,255,.55)'); gr.addColorStop(1,'rgba(255,255,255,0)'); g.fillStyle=gr; g.fillRect(0,0,W,H); const gx=g.createLinearGradient(0,0,W,0); gx.addColorStop(0,'rgba(0,0,0,1)'); gx.addColorStop(.25,'rgba(0,0,0,0)'); gx.addColorStop(.75,'rgba(0,0,0,0)'); gx.addColorStop(1,'rgba(0,0,0,1)'); g.globalCompositeOperation='destination-out'; g.fillStyle=gx; g.fillRect(0,0,W,H); return toTex(c,true,false); })();
 
 // 城の窓（24m×10m＝横4窓×2階）。st: 'n'＝ワイアットヴィルのゴシック窓、'm'＝中世の細い窓
-function castleWinTex(base,dark,st,lit){ const W=512,H=256,c=makeCanvas(W,H),g=c.getContext('2d');
-  if(lit){ g.fillStyle='#000'; g.fillRect(0,0,W,H); } else { noiseFill(g,W,H,base,dark,50,4); g.strokeStyle='rgba(60,52,42,.35)'; g.lineWidth=2; for(let y=0;y<H;y+=H/12){ g.beginPath(); g.moveTo(0,y); g.lineTo(W,y); g.stroke(); } if(st==='n'){ g.fillStyle='rgba(28,26,24,.6)'; for(let y=0;y<H;y+=H/12) for(let x=0;x<W;x+=6) g.fillRect(x+rnd()*3,y-1,2,2); } }
+function castleWinTex(base,dark,st,lit,bg){ const W=512,H=256,c=makeCanvas(W,H),g=c.getContext('2d');
+  if(lit){ g.fillStyle='#000'; g.fillRect(0,0,W,H); } else if(bg){ const s=W/24*5; for(let y=0;y<H;y+=s) for(let x=0;x<W;x+=s) g.drawImage(bg,x,y,s,s); if(st==='m'){ g.fillStyle='rgba(70,58,40,.38)'; g.fillRect(0,0,W,H); } } else { noiseFill(g,W,H,base,dark,50,4); g.strokeStyle='rgba(60,52,42,.35)'; g.lineWidth=2; for(let y=0;y<H;y+=H/12){ g.beginPath(); g.moveTo(0,y); g.lineTo(W,y); g.stroke(); } if(st==='n'){ g.fillStyle='rgba(28,26,24,.6)'; for(let y=0;y<H;y+=H/12) for(let x=0;x<W;x+=6) g.fillRect(x+rnd()*3,y-1,2,2); } }
   for(let j=0;j<2;j++) for(let i=0;i<4;i++){ const cx=i*W/4+W/8, y0=j*H/2+(st==='n'?22:30), w=st==='n'?58:26, h=st==='n'?86:66;
     if(lit){ if(rnd()<.5) continue; g.fillStyle=pick(['#ffd28a','#ffe2a8','#ffc878','#fff0c8']); }
     else { const gr=g.createLinearGradient(0,y0,0,y0+h); gr.addColorStop(0,'#6a7c8c'); gr.addColorStop(.5,'#2e3a46'); gr.addColorStop(1,'#1c242c'); g.fillStyle=gr; }
@@ -1398,6 +1398,23 @@ function drawMini(){ const lv=lvlOf(P.x,P.y,P.z); const key=lv+ERA; const L=LVCA
   mg.fillStyle='#e8b84a'; for(const s of SPOTS){ if(s.lvl!==lv||!spotOn(s)) continue; const dx=(s.x-P.x)*scale+W/2, dz=(s.z-P.z)*scale+W/2; if(dx<0||dx>W||dz<0||dz>W) continue; mg.save(); mg.translate(dx,dz); mg.rotate(PI/4); mg.fillRect(-4,-4,8,8); mg.restore(); }
   navMini(lv,scale,W);
   mg.save(); mg.translate(W/2,W/2); mg.rotate(-P.yaw); mg.fillStyle='#fff'; mg.beginPath(); mg.moveTo(0,-11); mg.lineTo(7,8); mg.lineTo(0,4); mg.lineTo(-7,8); mg.closePath(); mg.fill(); mg.restore(); }
+
+/* ---------- 画像テクスチャ（img/ にあれば差し替え。読めなければ手続き生成のまま） ---------- */
+{ const TL=new THREE.TextureLoader(); const AN=Math.min(8,maxAniso);
+  const use=(file,fn,rep)=>TL.load('img/'+file,t=>{ t.encoding=THREE.sRGBEncoding; t.wrapS=t.wrapT=THREE.RepeatWrapping; t.anisotropy=AN; if(rep) t.repeat.set(rep[0],rep[1]); fn(t); needRefl=2; },undefined,()=>{});
+  const setMap=(m,t,emis)=>{ m.map=t; if(emis) m.emissiveMap=t; m.needsUpdate=true; };
+  use('stone_wall.webp',t=>{ t.repeat.set(.8,.8); setMap(M.ash,t,true); setMap(M.ashL,t,true); M.ash.color.set('#e2dbd0'); M.ashL.color.set('#ffffff');
+    const t2=t.clone(); t2.needsUpdate=true; setMap(M.ashD,t2,true); M.ashD.color.set('#9a8f7c');
+    for(const [k,st] of [['win','n'],['winM','m']]){ const w=castleWinTex('','',st,false,t.image); w.anisotropy=AN; M[k].map=w; M[k].emissiveMap=w; M[k].color.set(st==='n'?'#e8e2d8':'#ffffff'); M[k].needsUpdate=true; } });
+  use('fan_vault.webp',t=>{ t.repeat.set(.5,.8); setMap(M.fan,t,true); });
+  use('stained_glass.webp',t=>{ for(const k of ['gC','gW']){ GLASSM[k].map=t; GLASSM[k].needsUpdate=true; M['o'+k].emissiveMap=t; M['o'+k].needsUpdate=true; } });
+  use('garter_banners.webp',t=>{ M.banners.map=t; M.banners.alphaTest=.45; M.banners.needsUpdate=true; });
+  use('shield_ceiling.webp',t=>setMap(M.shields,t));
+  use('portraits.webp',t=>setMap(M.portraits,t));
+  use('tapestry.webp',t=>setMap(M.tapestry,t));
+  use('town_georgian.webp',t=>{ for(const i of [0,2,4]) setMap(M.facs[i],t); M.facs[2].color.set('#d8c8c0'); M.facs[4].color.set('#f0e4d4'); });
+  use('town_timber.webp',t=>{ for(const m of M.facsM) setMap(m,t); M.facsM[1].color.set('#e8e0d2'); });
+}
 
 /* ============================================================
    操作（パッド・キーボード・マウス）
